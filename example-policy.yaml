@@ -21,7 +21,7 @@ spec:
     generate:
       apiVersion: batch/v1
       kind: Job
-      name: job-demo-{{ request.object.metadata.name }}
+      name: job-demo-{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}
       synchronize: true
       namespace: default
       data:
