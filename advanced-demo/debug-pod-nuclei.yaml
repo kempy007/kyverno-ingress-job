@@ -1,0 +1,20 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: nuclei
+  namespace: default
+  labels:
+    app/eai: '1110111'
+    app.kubernetes.io/instance: nuclei
+spec:
+  containers:
+    - name: nuclei
+      image: 'projectdiscovery/nuclei:latest'
+      command:
+        - /bin/sh
+        - '-c'
+        - '--'
+      args:
+        - while true; do sleep 30; done;
+      resources: {}
+

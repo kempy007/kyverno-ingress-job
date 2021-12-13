@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: webgoat-ingress
+  namespace: bad-apps
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/app-root: /WebGoat
+spec:
+  rules:
+    - host: webgoat.20.50.96.71.nip.io
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: webgoat
+              servicePort: 8080

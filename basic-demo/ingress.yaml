@@ -3,9 +3,11 @@ kind: Ingress
 metadata:
   creationTimestamp: null
   name: simple-test1
+  labels:
+    dast.scan: "true"
 spec:
   rules:
-  - host: foo.com
+  - host: 12.foo.com
     http:
       paths:
       - backend:

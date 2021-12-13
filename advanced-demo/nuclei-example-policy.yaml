@@ -1,0 +1,60 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: ingress-nuclei-job
+  annotations:
+    policies.kyverno.io/title: Ingress Add Job
+    policies.kyverno.io/category: Multi-Tenancy
+    policies.kyverno.io/subject: Ingress, Job
+    policies.kyverno.io/description: >-
+      Demonstration policy to show that a generate policy can be leveraged
+      to pass keydetails such as host to a downstream job that can carry out
+      actions with 3rd party API's for example.
+    pod-policies.kyverno.io/autogen-controllers: Job
+spec:
+  rules:
+  - name: generate-nuclei-job
+    match:
+      resources:
+        kinds:
+        - Ingress
+    generate:
+      apiVersion: batch/v1
+      kind: Job
+      name: nuclei-scan-{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}
+      #generateName: nuclei-scan-{{ request.object.metadata.name }}- # fails validation
+      synchronize: true
+      namespace: cs-scans
+      data:
+        spec:
+          ttlSecondsAfterFinished: 0
+#          backoffLimit: 2
+          template:
+            metadata:
+              labels:
+                app: '3693963'
+            spec:
+              containers:
+              - image: projectdiscovery/nuclei:latest
+                name: pod-job-nuclei-scan
+                env:
+                - name: INPUTHOST
+                  value: "{{ request.object.spec.rules[0].host }}"
+                # - name: INPUTPORT
+                #   value: "{{ request.object.spec.rules[0].http.paths[0].backend.service.port.number }}"
+                command:
+                - /bin/sh
+                - '-c'
+                - '--'
+                # - nuclei
+                # - -v
+                # - -u 
+                # - <<<
+                # - echo 
+                # - "$INPUTHOST:$INPUTPORT" 
+                # - ;
+                # - echo 
+                # - "$INPUTHOST:$INPUTPORT"
+                args:
+                - printenv && echo $INPUTHOST && nuclei -v -u $INPUTHOST
+              restartPolicy: "Never"

@@ -1,0 +1,55 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: ingress-add-job
+  annotations:
+    policies.kyverno.io/title: Ingress Add Job
+    policies.kyverno.io/category: Multi-Tenancy
+    policies.kyverno.io/subject: Ingress, Job
+    policies.kyverno.io/description: >-
+      Demonstration policy to show that a generate policy can be leveraged
+      to pass keydetails such as host to a downstream job that can carry out
+      actions with 3rd party API's for example.
+    # pod-policies.kyverno.io/autogen-controllers: Job
+spec:
+  rules:
+  - name: generate-job
+    match:
+      resources:
+        # names:
+        # - "*"
+        kinds:
+        - Ingress
+        selector:
+          matchLabels: 
+            # ingress.source: "mko890" # this is checking the watched resource manifest
+            dast.scan: "true"
+    generate:
+      apiVersion: batch/v1
+      kind: Job
+      name: job-demo-{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}
+      synchronize: true
+      namespace: default
+      data:
+        spec:
+          # selector:
+          #   matchLabels:
+          #     ingress.source: "{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}"
+          ttlSecondsAfterFinished: 0
+          template:
+            metadata:
+              labels:
+                # app: '3693963'
+                ingress.source: "mko890" #"{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}"
+            spec:
+              containers:
+              - image: alpine:latest
+                name: pod-job-demo
+                env:
+                - name: INPUTHOST
+                  value: "{{ request.object.spec.rules[0].host }}"
+                command:
+                - /bin/sh
+                - -c
+                - echo $INPUTHOST
+              restartPolicy: "Never"

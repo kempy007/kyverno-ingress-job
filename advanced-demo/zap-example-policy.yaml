@@ -1,7 +1,7 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: ingress-add-job
+  name: ingress-zap-job
   annotations:
     policies.kyverno.io/title: Ingress Add Job
     policies.kyverno.io/category: Multi-Tenancy
@@ -13,7 +13,7 @@ metadata:
     pod-policies.kyverno.io/autogen-controllers: Job
 spec:
   rules:
-  - name: generate-job
+  - name: generate-zap-job
     match:
       resources:
         kinds:
@@ -21,9 +21,11 @@ spec:
     generate:
       apiVersion: batch/v1
       kind: Job
-      name: job-demo-{{ request.object.metadata.name }}
+      name: zap-scan-{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}
       synchronize: true
-      namespace: default
+      namespace: cs-scans
+#      spec:
+#        backoffLimit: 2
       data:
         spec:
           ttlSecondsAfterFinished: 0
@@ -33,13 +35,15 @@ spec:
                 app: '3693963'
             spec:
               containers:
-              - image: alpine:latest
-                name: pod-job-demo
+              - image: owasp/zap2docker-stable
+                name: pod-job-zap-scan-{{ request.object.metadata.name }}-{{ request.object.metadata.generation }}
                 env:
                 - name: INPUTHOST
                   value: "{{ request.object.spec.rules[0].host }}"
                 command:
                 - /bin/sh
-                - -c
-                - echo $INPUTHOST
+                - '-c'
+                - '--'
+                args:
+                - printenv && echo $INPUTHOST && zap-cli quick-scan --self-contained --spider --ajax-spider -r -s all -l Low --start-options '-config api.disablekey=true' http://$INPUTHOST && echo "Retval gt 0" 
               restartPolicy: "Never"
